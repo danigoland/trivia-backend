@@ -17,8 +17,8 @@ import java.util.Arrays;
  * Created by 0503337710 on 27/03/2016.
  */
 public class OAuthService  {
-    String CLIENT_ID_WEB ="606055316887-udak4tssjo50rgfnc8q2l4s1b0ril3pp.apps.googleusercontent.com";
-    String CLIENT_ID_ANDROID_SDK ="606055316887-1hvvgd3m8ekt2142b7bua3htto1996vk.apps.googleusercontent.com";
+    String CLIENT_ID_WEB ="588482060414-u1ji3fig361m77nln0sa0coh4ctaeant.apps.googleusercontent.com";
+    String CLIENT_ID_ANDROID_SDK ="588482060414-18k4gqi2tm53aonmofmjmfsjkf4erfae.apps.googleusercontent.com";
     GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new JacksonFactory())
             .setAudience(Arrays.asList(CLIENT_ID_ANDROID_SDK,CLIENT_ID_WEB))
             // If you retrieved the token on Android using the Play Services 8.3 API or newer, set
@@ -53,16 +53,19 @@ public class OAuthService  {
             }
 
         }catch (IOException e) {
+            e.printStackTrace();
             userInfo.setValidToken(false);
             return userInfo;
 
 
         }
         catch (GeneralSecurityException e){
+            e.printStackTrace();
             userInfo.setValidToken(false);
             return userInfo;
         }
         catch (IllegalArgumentException e){
+            e.printStackTrace();
             userInfo.setValidToken(false);
             return userInfo;
         }

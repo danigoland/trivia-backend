@@ -32,6 +32,7 @@ OAuthService oAuthService = new OAuthService();
 
 
                 try {
+
                     Key linkKey = KeyFactory.createKey("Users", user.getGoogleId());
 
                     Entity link = datastore.get(linkKey);
@@ -46,6 +47,7 @@ OAuthService oAuthService = new OAuthService();
 
                 } catch (EntityNotFoundException e) {
                     AsymmetricEncryption asy = new AsymmetricEncryption();
+                    asy.makeNewKeys();
                     try {
                         byte[] savePublic = AsymmetricEncryption.savePublicKeyB(asy.getPublicKey());
                         Debug.rsa("Pub:" + savePublic);
@@ -94,7 +96,7 @@ OAuthService oAuthService = new OAuthService();
     }
     @ApiMethod(name = "setScore"
             ,path = "setScore",
-            httpMethod = ApiMethod.HttpMethod.GET)
+            httpMethod = ApiMethod.HttpMethod.POST)
     public RegisterResponse setScore(Score score) {
         User user = oAuthService.getGoogleUser(score.getUserToken());
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -190,13 +192,23 @@ OAuthService oAuthService = new OAuthService();
 
     }
     @ApiMethod(name = "getQuestions"
-    ,path = "getquestions",
+    ,path = "getQuestions",
     httpMethod = ApiMethod.HttpMethod.GET)
-    public QuestionList getQuestions() {
-
-            List<Question> questionsList = new ArrayList<>();
+    public QuestionList getQuestions(@Named("token") String token,@Named("category") String category) {
+            User user = oAuthService.getGoogleUser(token);
+        try {
             DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-            Query questions = new Query("Question");
+
+            Key linkKey = KeyFactory.createKey("Users", user.getGoogleId());
+
+            Entity link = datastore.get(linkKey);
+
+            String key = (String)link.getProperty("sPrivate");
+            AsymmetricEncryption asy = new AsymmetricEncryption();
+            PrivateKey pkey = asy.loadPrivateKeyS(key);
+            category = asy.decrypt(category,pkey).trim();
+            List<Question> questionsList = new ArrayList<>();
+            Query questions = new Query(category);
             Query.Filter rank1Filter =
                     new Query.FilterPredicate("rank",
                             Query.FilterOperator.EQUAL,
@@ -212,51 +224,51 @@ OAuthService oAuthService = new OAuthService();
             List<Entity> rank1 = datastore.prepare(questions.setFilter(rank1Filter)).asList(FetchOptions.Builder.withDefaults());
             List<Entity> rank2 = datastore.prepare(questions.setFilter(rank2Filter)).asList(FetchOptions.Builder.withDefaults());
             List<Entity> rank3 = datastore.prepare(questions.setFilter(rank3Filter)).asList(FetchOptions.Builder.withDefaults());
-            System.out.println("rank1 size: "+rank1.size());
-            System.out.println("rank2 size: "+rank2.size());
-            System.out.println("rank3 size: "+rank3.size());
+            System.out.println("rank1 size: " + rank1.size());
+            System.out.println("rank2 size: " + rank2.size());
+            System.out.println("rank3 size: " + rank3.size());
 
-        Integer[] rank1_numbers = sampleRandomNumbersWithoutRepetition(0,rank1.size(),3);
-        Integer[] rank2_numbers = sampleRandomNumbersWithoutRepetition(0,rank2.size(),3);
-        Integer[] rank3_numbers = sampleRandomNumbersWithoutRepetition(0,rank3.size(),4);
-            for(Integer i : rank1_numbers){
+            Integer[] rank1_numbers = sampleRandomNumbersWithoutRepetition(0, rank1.size(), 3);
+            Integer[] rank2_numbers = sampleRandomNumbersWithoutRepetition(0, rank2.size(), 3);
+            Integer[] rank3_numbers = sampleRandomNumbersWithoutRepetition(0, rank3.size(), 4);
+            for (Integer i : rank1_numbers) {
                 Entity e = rank1.get(i);
                 Question q = new Question();
-                q.setmQuestion((String)e.getProperty("question"));
-                q.setmOptionToAns_1((String)e.getProperty("optional_answer1"));
-                q.setmOptionToAns_2((String)e.getProperty("optional_answer2"));
-                q.setmOptionToAns_3((String)e.getProperty("optional_answer3"));
-                q.setmOptionToAns_4((String)e.getProperty("optional_answer4"));
-                q.settCorrectAns((String)e.getProperty("current_answer"));
+                q.setmQuestion((String) e.getProperty("question"));
+                q.setmOptionToAns_1((String) e.getProperty("optional_answer1"));
+                q.setmOptionToAns_2((String) e.getProperty("optional_answer2"));
+                q.setmOptionToAns_3((String) e.getProperty("optional_answer3"));
+                q.setmOptionToAns_4((String) e.getProperty("optional_answer4"));
+                q.settCorrectAns((String) e.getProperty("current_answer"));
                 q.setRank(1);
                 q.settQuestionKind((Boolean) e.getProperty("qkind"));
                 questionsList.add(q);
 
             }
-            for(Integer i : rank2_numbers){
+            for (Integer i : rank2_numbers) {
                 Entity e = rank2.get(i);
                 Question q = new Question();
-                q.setmQuestion((String)e.getProperty("question"));
-                q.setmOptionToAns_1((String)e.getProperty("optional_answer1"));
-                q.setmOptionToAns_2((String)e.getProperty("optional_answer2"));
-                q.setmOptionToAns_3((String)e.getProperty("optional_answer3"));
-                q.setmOptionToAns_4((String)e.getProperty("optional_answer4"));
-                q.settCorrectAns((String)e.getProperty("current_answer"));
+                q.setmQuestion((String) e.getProperty("question"));
+                q.setmOptionToAns_1((String) e.getProperty("optional_answer1"));
+                q.setmOptionToAns_2((String) e.getProperty("optional_answer2"));
+                q.setmOptionToAns_3((String) e.getProperty("optional_answer3"));
+                q.setmOptionToAns_4((String) e.getProperty("optional_answer4"));
+                q.settCorrectAns((String) e.getProperty("current_answer"));
                 q.setRank(2);
                 q.settQuestionKind((Boolean) e.getProperty("qkind"));
                 questionsList.add(q);
 
             }
 
-            for(Integer i : rank3_numbers){
+            for (Integer i : rank3_numbers) {
                 Entity e = rank3.get(i);
                 Question q = new Question();
-                q.setmQuestion((String)e.getProperty("question"));
-                q.setmOptionToAns_1((String)e.getProperty("optional_answer1"));
-                q.setmOptionToAns_2((String)e.getProperty("optional_answer2"));
-                q.setmOptionToAns_3((String)e.getProperty("optional_answer3"));
-                q.setmOptionToAns_4((String)e.getProperty("optional_answer4"));
-                q.settCorrectAns((String)e.getProperty("current_answer"));
+                q.setmQuestion((String) e.getProperty("question"));
+                q.setmOptionToAns_1((String) e.getProperty("optional_answer1"));
+                q.setmOptionToAns_2((String) e.getProperty("optional_answer2"));
+                q.setmOptionToAns_3((String) e.getProperty("optional_answer3"));
+                q.setmOptionToAns_4((String) e.getProperty("optional_answer4"));
+                q.settCorrectAns((String) e.getProperty("current_answer"));
                 q.setRank(3);
                 q.settQuestionKind((Boolean) e.getProperty("qkind"));
                 questionsList.add(q);
@@ -266,7 +278,11 @@ OAuthService oAuthService = new OAuthService();
             questionList.setQuestionList(questionsList);
 
             return questionList;
-
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
 
 
 
@@ -275,7 +291,7 @@ OAuthService oAuthService = new OAuthService();
     @ApiMethod(name = "test"
             ,path = "test",
             httpMethod = ApiMethod.HttpMethod.GET)
-    public Question test(@Named("name") String name , @Named("question") String question, @Named("answer1") String answer1, @Named("answer2") String answer2, @Named("answer3") String answer3, @Named("answer4") String answer4, @Named("answer") String answer, @Named("kind") Boolean kind, @Named("rank") Integer rank)
+    public Question test(@Named("category") String category,@Named("name") String name , @Named("question") String question, @Named("answer1") String answer1, @Named("answer2") String answer2, @Named("answer3") String answer3, @Named("answer4") String answer4, @Named("answer") String answer, @Named("kind") Boolean kind, @Named("rank") Integer rank)
     {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         Transaction txn = datastore.beginTransaction();
@@ -290,7 +306,7 @@ OAuthService oAuthService = new OAuthService();
         q.settQuestionKind(kind);
         q.setRank(rank);
 
-        Entity rate = new Entity("Question",name);
+        Entity rate = new Entity(category,name);
         rate.setProperty("question",q.getmQuestion());
         rate.setProperty("current_answer",q.gettCorrectAns());
         rate.setProperty("optional_answer1",q.getmOptionToAns_1());
